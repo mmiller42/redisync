@@ -1,7 +1,7 @@
-import Cache, { HashCache, ValueCache } from './caches';
-import Redisync from './Redisync';
+import Cache, { HashCache, ValueCache } from './caches'
+import Redisync from './Redisync'
 
-module.exports = Redisync;
+module.exports = Redisync
 
-export default Redisync;
-export { Cache, HashCache, ValueCache };
+export default Redisync
+export { Cache, HashCache, ValueCache }
