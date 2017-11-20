@@ -1,0 +1,59 @@
+{
+  "name": "redisync",
+  "version": "0.0.0",
+  "description": "A tool for synchronizing a centralized in-memory data cache across multiple Node.js applications using pub/sub.",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "rm -rf lib && babel src --out-dir lib --source-maps --copy-files",
+    "precommit": "lint-staged",
+    "prettier": "prettier --write 'src/*.{js,json},.babelrc,.babelrc.js,.prettierrc'",
+    "test": "exit 0",
+    "watch": "npm run build -- --watch"
+  },
+  "lint-staged": {
+    "src/*.{js,json},.babelrc,.babelrc.js,.prettierrc": [
+      "prettier --write",
+      "git add"
+    ]
+  },
+  "engines": {
+    "node": ">=4.3.0 <5.0.0 || >=5.10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mmiller42/redisync.git"
+  },
+  "keywords": [
+    "redis",
+    "sync",
+    "synchronization",
+    "memory",
+    "pubsub",
+    "cache"
+  ],
+  "author": "Matt Miller <me@mmiller.me>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mmiller42/redisync/issues"
+  },
+  "homepage": "https://github.com/mmiller42/redisync#readme",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-env": "^1.6.1",
+    "husky": "^0.14.3",
+    "lint-staged": "^5.0.0",
+    "prettier": "^1.8.2"
+  },
+  "dependencies": {
+    "babel-runtime": "^6.26.0",
+    "ioredis": "^3.2.1",
+    "lodash.castarray": "^4.4.0",
+    "lodash.flatmap": "^4.5.0",
+    "lodash.foreach": "^4.5.0",
+    "lodash.isplainobject": "^4.0.6",
+    "lodash.reduce": "^4.6.0"
+  }
+}
