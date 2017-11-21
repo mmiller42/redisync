@@ -65,35 +65,28 @@ import Redisync from 'redisync'
 // Constructor takes the same parameters as `ioredis`
 const redisync = new Redisync('redis://localhost:6379')
 
-// Create a simple value cache. Redisync will save the value in the key "down_for_maintenance" and
-// publish messages to a channel called "maintenance_changes"
-const downForMaintenance = redisync.createValueCache('maintenance_changes', {
-  key: 'down_for_maintenance',
-})
-
-// Attempts to pull the current value from Redis (this just needs to be called when bootstrapping
-// your application)
-downForMaintenance.load()
+// Create a simple value cache. Redisync will save the value in the key "greeting" and publish
+// messages to a channel called "greeting_changes"
+const greeting = redisync.createValueCache('greeting_changes', { key: 'greeting' })
 
 // On every API request, we can synchronously check the value as it has been read from Redis and cached
-// in memory
-app.use((req, res, next) => {
-  const siteIsDown = downForMaintenance.get()
-  if (siteIsDown) {
-    res.send('Sorry, the website is temporarily down for maintenance.')
-  } else {
-    next()
-  }
+// in memory. (The value will be `null` until it has been retrieved.)
+app.get('greeting', (req, res) => {
+  const greetingMessage = greeting.get()
+  res.send(greetingMessage)
 })
 
 // Later, we can change the downForMaintenance value and it should propagate to any other servers
 // connected to the same Redis instance and subscribed to the same channel
-downForMaintenance.set(true)
+greeting.set('Hello world!')
 ```
 
-When a Redisync cache instance is created, it automatically subscribes to the channel; however, it does not preload the existing data already in Redis until you call [`ValueCache#load`](#load). This is for instances when your server might not be interested in the initial value because it is bootstrapping and intends to replace whatever value currently exists in Redis with a different one, regardless of its current value.
+When a Redisync cache instance is created, it automatically subscribes to the channel and requests the current value from Redis. Until the current value is fetched, the result of [`ValueCache#get`](#get) will be `null`. If it is important to wait until the value is populated before continuing, you can subscribe to the cache and continue when the listener is executed.
 
-Since [`ValueCache#load`](#load) requests the data from Redis, it is not synchronous. The value returned from [`ValueCache#get`](#get) will be its initial value (`null` for the [`ValueCache`](#valuecache) cache) until Redis has responded. Therefore, [`ValueCache#load`](#load), [`ValueCache#set`](#setvalue), and similar methods return promises, for cases when it is important to wait for the value to be updated.
+```js
+const greeting = redisync.createValueCache('greeting_changes', { key: 'greeting' })
+greeting.subscribeOnce(greetingMessage => console.log(greetingMessage))
+```
 
 ## API
 
@@ -159,6 +152,7 @@ A Cache which can be used to store a simple value in a static key.
 |`options.key`|string|The key to store the value in in the Redis database. This must be unique for the Redis key space.|*None*|
 |`[options.composeArguments]`|function(value: any): string\|string[]|A function that receives the value passed to [`#initialize`](#initializevalue) or [`#set`](#setvalue) and returns the arguments that should be passed to the Redis `SET` command, after `options.key`. You may return an array with additional arguments (e.g. to add an expiration command).|`value => JSON.stringify(value)`|
 |`[options.revive]`|function(data: string): any|A function that receives the raw data from the Redis response and returns the data that will be returned by [`#get`](#get) (i.e. unserializes the data).|`value => JSON.parse(value)`|
+|`[options.load]`|boolean|Set to false to not preload the current value from Redis when the Cache is instantiated. This can be used when you intend to overwrite the value and do not need to fetch the existing value.|`true`|
 
 ```js
 const cache = redisync.createValueCache('recent_transaction_date', {
@@ -207,7 +201,7 @@ await cache.initialize(42)
 
 #### `#load()`
 
-Fetches the data from Redis and loads it into memory. This method should only be called at most once, when the app is bootstrapped. Subsequent changes to state will be reflected automatically.
+Fetches the data from Redis and loads it into memory. This method should only be called at most once, when the app is bootstrapped. Subsequent changes to state will be reflected automatically. Usually this is called automatically when the cache is instantiated, unless configured not to.
 
 Returns a Promise which resolves when the data is loaded into state.
 
@@ -237,9 +231,12 @@ Attaches an event listener that will be executed whenever the state changes.
 |:--------|:---|:----------|:------|
 |`listener`|function(state: any)|A function called whenever the state changes. It is passed the result of the latest call to [`#get`](#get).|*None*|
 
+#### `#subscribeOnce(listener)`
+
+Attaches an event listener that will be executed the next time the state changes.
+
 ```js
-const listener = state => console.log('State changed!', state)
-cache.subscribe(listener)
+cache.subscribeOnce(state => console.log('State changed!', state))
 ```
 
 #### `#unsubscribe(listener)`
@@ -297,7 +294,7 @@ You can implement your own Cache classes for Redisync by creating a class that e
 
 Better documentation for this is coming, along with other builtin Cache classes (`HashCache`, `ListCache`, and `VariableKeyCache`). In the mean time, use the source of [`ValueCache`](src/caches/ValueCache.js) as a reference. Note these significant definitions and calls:
 
-* Defining a constructor with the signature of `constructor(redisync, channel, options)` and passing the first two arguments to `super`. No options are needed or referenced by the superclass.
+* Defining a constructor with the signature of `constructor(redisync, channel, options)` and passing the first two arguments to `super`. No options are needed or referenced by the superclass; however, passing a third boolean argument to the constructor will determine whether or not data is preloaded when the object is constructed.
 * Defining an instance method `load()`. This method must be present. It must return the result of the superclass' private `_load(commands, parseResults)` method, which accepts an array of Redis commands, each of which is a nested array containing the command name followed by its arguments; and a function to convert the response from Redis to extract the data.
 * Defining an instance method `initialize(data)`. This method must be present. It must return the result of the superclass' private `_initialize(commands)` method, which accepts an array of commands. This method should accept a complete representation of the state and replicate that state in Redis.
 * Defining an instance method `clear(broadcast = true)`. This method must be present. It must return the result of the superclass' private `_clear(commands, broadcast)` method, which accepts an array of commands and the broadcast parameter.
