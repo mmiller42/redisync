@@ -280,9 +280,9 @@ downForMaintenance.set({ message: 'We will reopen December 31', until: new Date(
 // Configure your Cache if you want to convert the data to and from a serializable form
 const downForMaintenance = redisync.createValueCache('maintenance_changes', {
   key: 'down_for_maintenance',
-  composeArguments: ({ message, until }) => JSON.stringify([message, until.toISOString()]),
-  revive: json => {
-    const [message, until] = JSON.parse(json)
+  composeArguments: ({ message, until }) => [message, until.toISOString()].join('|'),
+  revive: rawString => {
+    const [message, until] = rawString.split('|')
     return { message, until: new Date(until) }
   },
 })
