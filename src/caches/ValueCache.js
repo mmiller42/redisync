@@ -9,7 +9,7 @@ module.exports = class ValueCache extends Cache {
   constructor(
     redisync,
     channel,
-    { key, composeArguments = defaultComposeArguments, revive = defaultRevive } = {}
+    { key, composeArguments = defaultComposeArguments, revive = defaultRevive, load = true } = {}
   ) {
     super(redisync, channel)
 

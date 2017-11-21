@@ -3,15 +3,21 @@ import Redisync from '../Redisync'
 import assert from 'assert'
 
 module.exports = class Cache {
-  constructor(redisync, channel) {
+  constructor(redisync, channel, load = true) {
     assert(redisync instanceof Redisync, 'redisync argument must be an instance of Redisync')
     assert(typeof channel === 'string', 'channel argument must be a string')
+    assert(typeof load === 'boolean', 'load argument must be a boolean')
+
     this._redisync = redisync
     this._channel = channel
     this._emitter = new EventEmitter()
 
     this._initializeConsumer()
     this._state = this._getInitialState()
+
+    if (load) {
+      this.load()
+    }
   }
 
   get() {
@@ -20,6 +26,10 @@ module.exports = class Cache {
 
   subscribe(listener) {
     this._emitter.on('change', listener)
+  }
+
+  subscribeOnce(listener) {
+    this._emitter.once('change', listener)
   }
 
   unsubscribe(listener) {
