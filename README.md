@@ -80,7 +80,7 @@ downForMaintenance.load()
 app.use((req, res, next) => {
   const siteIsDown = downForMaintenance.get()
   if (siteIsDown) {
-    res.send('<p>Sorry, the website is temporarily down for maintenance.')
+    res.send('Sorry, the website is temporarily down for maintenance.')
   } else {
     next()
   }
