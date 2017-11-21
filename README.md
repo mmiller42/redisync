@@ -69,15 +69,14 @@ const redisync = new Redisync('redis://localhost:6379')
 // messages to a channel called "greeting_changes"
 const greeting = redisync.createValueCache('greeting_changes', { key: 'greeting' })
 
-// On every API request, we can synchronously check the value as it has been read from Redis and cached
-// in memory. (The value will be `null` until it has been retrieved.)
+// On every API request, we can synchronously check the value as it has been read from Redis and
+// cached in memory. (The value will be `null` until it has been retrieved.)
 app.get('greeting', (req, res) => {
   const greetingMessage = greeting.get()
   res.send(greetingMessage)
 })
 
-// Later, we can change the downForMaintenance value and it should propagate to any other servers
-// connected to the same Redis instance and subscribed to the same channel
+// Update the value and it will propagate to any other servers connected to the same Redisync cache
 greeting.set('Hello world!')
 ```
 
